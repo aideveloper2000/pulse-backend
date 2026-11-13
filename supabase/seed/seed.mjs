@@ -75,6 +75,19 @@ async function pMap(items, fn, concurrency = CONCURRENCY) {
   return out;
 }
 
+function parseLength(value) {
+  if (value == null) return null;
+  const raw = String(value).trim();
+  if (!raw) return null;
+  if (raw.includes(':')) {
+    const parts = raw.split(':').map(Number);
+    if (parts.some((p) => !Number.isFinite(p))) return null;
+    return parts.reduce((acc, part) => acc * 60 + part, 0);
+  }
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) ? seconds : null;
+}
+
 function parseTrackFilename(name) {
   let base = name.replace(/\.mp3$/i, '').trim();
   let rest = base;
@@ -87,12 +100,9 @@ function parseTrackFilename(name) {
   return { artist: null, title: rest };
 }
 
-function coverUrl(identifier, files) {
-  const images = files.filter((f) => /\.(jpe?g|png)$/i.test(f.name) && !/__ia_thumb/.test(f.name));
-  if (!images.length) return null;
-  images.sort((a, b) => (Number(b.size) || 0) - (Number(a.size) || 0));
-  const preferred = images.find((f) => /itemimage|cover/i.test(f.name)) || images[0];
-  return `https://archive.org/download/${identifier}/${encodeURIComponent(preferred.name)}`;
+function coverUrl(identifier) {
+  // IA's item thumbnail endpoint: ~180x180, ~20KB, instead of multi-MB originals.
+  return `https://archive.org/services/img/${identifier}`;
 }
 
 function audioUrl(identifier, fileName) {
@@ -152,14 +162,16 @@ async function buildAlbum([identifier, meta]) {
 
   const tracks = mp3s.map((f, i) => {
     const parsed = parseTrackFilename(f.name);
-    const length = Number(f.length);
     return {
       external_id: `${identifier}/${f.name}`,
       title: parsed.title || f.name.replace(/\.mp3$/i, ''),
       artist: parsed.artist || albumArtist || 'Unknown Artist',
       audio_url: audioUrl(identifier, f.name),
       cover_url: cover,
-      duration_ms: Number.isFinite(length) ? Math.round(length * 1000) : null,
+      duration_ms: (() => {
+        const seconds = parseLength(f.length);
+        return seconds != null ? Math.round(seconds * 1000) : null;
+      })(),
       track_number: i + 1,
       genre,
       release_year: releaseYear,
