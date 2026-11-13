@@ -1,0 +1,14 @@
+{
+  "name": "pulse-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pulse — Supabase backend: schema, RLS, and catalog seed for the Pulse music app.",
+  "scripts": {
+    "seed": "node supabase/seed/seed.mjs",
+    "migrate": "psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f supabase/migrations/0001_init.sql"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
