@@ -88,6 +88,15 @@ function parseLength(value) {
   return Number.isFinite(seconds) ? seconds : null;
 }
 
+function cleanTitle(title) {
+  return title
+    .replace(/_(64|128|192|256|320)kb$/i, '')
+    .replace(/_vbr$/i, '')
+    .replace(/_/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function parseTrackFilename(name) {
   let base = name.replace(/\.mp3$/i, '').trim();
   let rest = base;
@@ -164,8 +173,8 @@ async function buildAlbum([identifier, meta]) {
     const parsed = parseTrackFilename(f.name);
     return {
       external_id: `${identifier}/${f.name}`,
-      title: parsed.title || f.name.replace(/\.mp3$/i, ''),
-      artist: parsed.artist || albumArtist || 'Unknown Artist',
+      title: cleanTitle(parsed.title || f.name.replace(/\.mp3$/i, '')),
+      artist: parsed.artist || albumArtist || 'Various Artists',
       audio_url: audioUrl(identifier, f.name),
       cover_url: cover,
       duration_ms: (() => {
@@ -183,7 +192,7 @@ async function buildAlbum([identifier, meta]) {
   return {
     external_id: identifier,
     title,
-    artist: albumArtist || 'Unknown Artist',
+    artist: albumArtist || 'Various Artists',
     cover_url: cover,
     release_year: releaseYear,
     genre,
